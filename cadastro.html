@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cadastro de Funcionários — Stemmoz</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --stemmoz-blue: #4D7BFF;
+    --stemmoz-blue-dark: #3A63E0;
+    --stemmoz-teal: #39BAA1;
+    --stemmoz-teal-dark: #2A9C86;
+  }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 40px 20px;
+    color: #1f2937;
+  }
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .brand-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  h1 {
+    font-size: 28px;
+    margin: 0;
+  }
+  .subtitle {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 28px;
+    margin-left: 64px;
+  }
+  .steps {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .step-pill {
+    flex: 1;
+    text-align: center;
+    padding: 8px 4px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e5e7eb;
+    color: #9ca3af;
+  }
+  .step-pill.active {
+    background: var(--stemmoz-blue);
+    color: white;
+  }
+  .step-pill.done {
+    background: #dcf5f0;
+    color: var(--stemmoz-teal-dark);
+  }
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+  }
+  .card h2 {
+    font-size: 16px;
+    margin-top: 0;
+    margin-bottom: 4px;
+    color: #111827;
+  }
+  .card .hint {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 18px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    margin-top: 16px;
+    color: #374151;
+  }
+  label:first-of-type { margin-top: 0; }
+  input[type="text"], select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  input[type="file"] {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 13px;
+  }
+  .file-drop {
+    border: 2px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background: #fafafa;
+  }
+  .preview {
+    margin-top: 14px;
+    text-align: center;
+  }
+  .preview img {
+    max-width: 160px;
+    max-height: 160px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    object-fit: cover;
+  }
+  button {
+    margin-top: 24px;
+    width: 100%;
+    padding: 12px;
+    background: var(--stemmoz-blue);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: var(--stemmoz-blue-dark); }
+  button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+  button.secondary {
+    background: #f3f4f6;
+    color: #374151;
+  }
+  button.secondary:hover { background: #e5e7eb; }
+  .status {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    display: none;
+  }
+  .status.success {
+    display: block;
+    background: #e6f9f5;
+    color: var(--stemmoz-teal-dark);
+    border: 1px solid #a8e6d9;
+  }
+  .status.error {
+    display: block;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  th {
+    color: #6b7280;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+  td.foto img {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    object-fit: cover;
+    vertical-align: middle;
+  }
+  .empty-state {
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+    padding: 24px 0;
+  }
+  .badge {
+    display: inline-block;
+    background: #eaf0ff;
+    color: var(--stemmoz-blue-dark);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .camera-wrap {
+    position: relative;
+    background: #111827;
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    max-width: 360px;
+    margin: 0 auto;
+  }
+  .camera-wrap video, .camera-wrap canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .camera-wrap canvas { display: none; }
+  .capture-instruction {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 12px;
+  }
+  .angle-thumbs {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  .angle-thumb {
+    text-align: center;
+  }
+  .angle-thumb .box {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    border: 2px dashed #d1d5db;
+    background: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-size: 11px;
+    color: #9ca3af;
+  }
+  .angle-thumb .box.filled {
+    border: 2px solid var(--stemmoz-teal);
+  }
+  .angle-thumb .box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .angle-thumb .label {
+    font-size: 11px;
+    margin-top: 6px;
+    color: #6b7280;
+  }
+  .camera-btn-row {
+    display: flex;
+    gap: 10px;
+  }
+  .camera-btn-row button { margin-top: 16px; }
+  .review-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 13px;
+  }
+  .review-row span:first-child {
+    color: #6b7280;
+  }
+  .review-row span:last-child {
+    font-weight: 600;
+    color: #111827;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="brand-header">
+    <svg width="52" height="52" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15,15 L15,2 A13,13 0 0,0 2,15 Z" fill="#39BAA1"/>
+      <path d="M17,15 L30,15 A13,13 0 0,0 17,2 Z" fill="#4D7BFF"/>
+      <path d="M15,17 L2,17 A13,13 0 0,0 15,30 Z" fill="#4D7BFF"/>
+      <path d="M17,17 L17,30 A13,13 0 0,0 30,17 Z" fill="#39BAA1"/>
+    </svg>
+    <h1>Cadastro de Funcionários</h1>
+  </div>
+  <div class="subtitle">Stemmoz — Sistema de Cadastro de Funcionários</div>
+
+  <div class="steps">
+    <div class="step-pill" id="pill1">1. Dados</div>
+    <div class="step-pill" id="pill2">2. Documento</div>
+    <div class="step-pill" id="pill3">3. Captura Facial</div>
+    <div class="step-pill" id="pill4">4. Confirmação</div>
+  </div>
+
+  <!-- STEP 1: DADOS -->
+  <div class="card" id="step1">
+    <h2>Dados do Funcionário</h2>
+    <div class="hint">Preenche os dados básicos para iniciar o cadastro.</div>
+
+    <label for="nome">Nome completo</label>
+    <input type="text" id="nome" placeholder="Ex: Dalva Cristóvão Paixão" required>
+
+    <label for="departamento">Departamento</label>
+    <select id="departamento" required>
+      <option value="">Seleccione o departamento</option>
+      <option value="Recursos Humanos">Recursos Humanos</option>
+      <option value="Tecnologias de Informação">Tecnologias de Informação</option>
+      <option value="Pedagógico">Pedagógico</option>
+      <option value="Administração">Administração</option>
+      <option value="Financeiro">Financeiro</option>
+    </select>
+
+    <button id="btnStep1Next">Continuar</button>
+    <div class="status" id="statusStep1"></div>
+  </div>
+
+  <!-- STEP 2: FOTO DO BI -->
+  <div class="card" id="step2" style="display:none;">
+    <h2>Documento de Identificação</h2>
+    <div class="hint">Carrega uma imagem legível de um documento oficial de identificação.</div>
+
+    <div class="file-drop">
+      <input type="file" id="fotoBI" accept="image/*">
+      <div class="preview" id="previewWrapper" style="display:none;">
+        <img id="previewImg" src="" alt="Pré-visualização do documento">
+      </div>
+    </div>
+
+    <div class="camera-btn-row">
+      <button class="secondary" id="btnStep2Back">Voltar</button>
+      <button id="btnStep2Next">Continuar</button>
+    </div>
+    <div class="status" id="statusStep2"></div>
+  </div>
+
+  <!-- STEP 3: CAPTURA FACIAL (APENAS FRONTAL) -->
+  <div class="card" id="step3" style="display:none;">
+    <h2>Captura Facial</h2>
+    <div class="hint">O sistema é automático: basta captar o rosto de frente para a câmara. As características faciais serão extraídas a partir desta única imagem.</div>
+
+    <div class="capture-instruction" id="captureInstruction">Posiciona o rosto de frente para a câmara</div>
+
+    <div class="camera-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="angle-thumbs">
+      <div class="angle-thumb">
+        <div class="box" id="thumbFrontal">Frontal</div>
+        <div class="label">Foto Facial</div>
+      </div>
+    </div>
+
+    <div class="camera-btn-row">
+      <button class="secondary" id="btnStartCamera">Activar Câmara</button>
+      <button id="btnCapture" disabled>Capturar</button>
+    </div>
+    <div class="camera-btn-row">
+      <button class="secondary" id="btnStep3Back">Voltar</button>
+      <button id="btnStep3Next" disabled>Continuar</button>
+    </div>
+    <div class="status" id="statusStep3"></div>
+  </div>
+
+  <!-- STEP 4: CONFIRMAÇÃO -->
+  <div class="card" id="step4" style="display:none;">
+    <h2>Confirmar Cadastro</h2>
+    <div class="hint">Revê os dados antes de finalizar o registo.</div>
+
+    <div id="reviewArea"></div>
+
+    <div class="camera-btn-row">
+      <button class="secondary" id="btnStep4Back">Voltar</button>
+      <button id="btnFinalizar">Finalizar Cadastro</button>
+    </div>
+    <div class="status" id="statusStep4"></div>
+  </div>
+
+  <div class="card">
+    <h2>Funcionários Registados <span class="badge" id="countBadge">0</span></h2>
+    <div id="tableWrapper">
+      <div class="empty-state">Ainda não há funcionários registados.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Endereço do backend Flask (o "computador/servidor" da arquitectura
+  // cliente-servidor). Se correres o servidor noutra máquina/porta,
+  // ajusta este valor.
+  const API_URL = 'http://localhost:5000';
+
+  // ---- estado do formulário em curso ----
+  let form = {
+    nome: '',
+    departamento: '',
+    fotoBI: null,
+    facial: { frontal: null }
+  };
+
+  const pills = {
+    1: document.getElementById('pill1'),
+    2: document.getElementById('pill2'),
+    3: document.getElementById('pill3'),
+    4: document.getElementById('pill4'),
+  };
+  const steps = {
+    1: document.getElementById('step1'),
+    2: document.getElementById('step2'),
+    3: document.getElementById('step3'),
+    4: document.getElementById('step4'),
+  };
+
+  function goToStep(n) {
+    for (let i = 1; i <= 4; i++) {
+      steps[i].style.display = (i === n) ? 'block' : 'none';
+      pills[i].classList.remove('active', 'done');
+      if (i < n) pills[i].classList.add('done');
+      if (i === n) pills[i].classList.add('active');
+    }
+    if (n === 3) initCamera();
+    if (n === 4) renderReview();
+    if (n !== 3) stopCamera();
+  }
+
+  function showStatus(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'status ' + type;
+  }
+
+  // ---- STEP 1 ----
+  document.getElementById('btnStep1Next').addEventListener('click', () => {
+    const nome = document.getElementById('nome').value.trim();
+    const departamento = document.getElementById('departamento').value;
+    if (!nome || !departamento) {
+      showStatus('statusStep1', 'Preenche o nome e selecciona o departamento.', 'error');
+      return;
+    }
+    form.nome = nome;
+    form.departamento = departamento;
+    document.getElementById('statusStep1').className = 'status';
+    goToStep(2);
+  });
+
+  // ---- STEP 2 ----
+  const fotoInput = document.getElementById('fotoBI');
+  const previewWrapper = document.getElementById('previewWrapper');
+  const previewImg = document.getElementById('previewImg');
+
+  fotoInput.addEventListener('change', () => {
+    const file = fotoInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      form.fotoBI = e.target.result;
+      previewImg.src = form.fotoBI;
+      previewWrapper.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btnStep2Back').addEventListener('click', () => goToStep(1));
+  document.getElementById('btnStep2Next').addEventListener('click', () => {
+    if (!form.fotoBI) {
+      showStatus('statusStep2', 'Por favor carrega a foto do documento de identificação.', 'error');
+      return;
+    }
+    document.getElementById('statusStep2').className = 'status';
+    goToStep(3);
+  });
+
+  // ---- STEP 3: CAMERA (apenas uma captura frontal) ----
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  let stream = null;
+
+  document.getElementById('btnStartCamera').addEventListener('click', initCamera);
+
+  async function initCamera() {
+    if (stream) return;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      document.getElementById('btnCapture').disabled = false;
+      showStatus('statusStep3', 'Câmara activa. Posiciona o rosto de frente e captura.', 'success');
+    } catch (err) {
+      showStatus('statusStep3', 'Não foi possível aceder à câmara: ' + err.message, 'error');
+    }
+  }
+
+  function stopCamera() {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+  }
+
+  document.getElementById('btnCapture').addEventListener('click', () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/png');
+
+    form.facial.frontal = dataUrl;
+    const thumbBox = document.getElementById('thumbFrontal');
+    thumbBox.innerHTML = `<img src="${dataUrl}" alt="frontal">`;
+    thumbBox.classList.add('filled');
+
+    document.getElementById('captureInstruction').textContent = 'Rosto capturado ✓';
+    document.getElementById('btnCapture').disabled = true;
+    document.getElementById('btnStep3Next').disabled = false;
+    showStatus('statusStep3', 'Captura facial concluída.', 'success');
+  });
+
+  document.getElementById('btnStep3Back').addEventListener('click', () => goToStep(2));
+  document.getElementById('btnStep3Next').addEventListener('click', () => {
+    if (!form.facial.frontal) {
+      showStatus('statusStep3', 'Captura o rosto antes de continuar.', 'error');
+      return;
+    }
+    goToStep(4);
+  });
+
+  // ---- STEP 4: REVIEW ----
+  function renderReview() {
+    const area = document.getElementById('reviewArea');
+    area.innerHTML = `
+      <div class="review-row"><span>Nome</span><span>${form.nome}</span></div>
+      <div class="review-row"><span>Departamento</span><span>${form.departamento}</span></div>
+      <div class="preview" style="margin-top:16px;">
+        <div style="display:flex; gap:12px; justify-content:center;">
+          <img src="${form.fotoBI}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" alt="BI">
+          <img src="${form.facial.frontal}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" alt="Frontal">
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById('btnStep4Back').addEventListener('click', () => goToStep(3));
+  document.getElementById('btnFinalizar').addEventListener('click', async () => {
+    const btn = document.getElementById('btnFinalizar');
+    btn.disabled = true;
+    btn.textContent = 'A registar...';
+    document.getElementById('statusStep4').className = 'status';
+
+    try {
+      const resposta = await fetch(`${API_URL}/api/funcionarios`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: form.nome,
+          departamento: form.departamento,
+          fotoBI: form.fotoBI,
+          fotoFacial: form.facial.frontal,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok || !dados.sucesso) {
+        showStatus('statusStep4', dados.erro || 'Não foi possível concluir o cadastro.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Finalizar Cadastro';
+        return;
+      }
+
+      showStatus('statusStep4', `${dados.mensagem} Código: ${dados.funcionario.codigo}`, 'success');
+      await carregarFuncionarios();
+
+      // reset form
+      form = { nome: '', departamento: '', fotoBI: null, facial: { frontal: null } };
+      document.getElementById('nome').value = '';
+      document.getElementById('departamento').value = '';
+      fotoInput.value = '';
+      previewWrapper.style.display = 'none';
+      document.getElementById('captureInstruction').textContent = 'Posiciona o rosto de frente para a câmara';
+      document.getElementById('btnCapture').disabled = true;
+      document.getElementById('btnStep3Next').disabled = true;
+      const thumbBox = document.getElementById('thumbFrontal');
+      thumbBox.classList.remove('filled');
+      thumbBox.innerHTML = 'Foto Facial';
+
+      btn.disabled = false;
+      btn.textContent = 'Finalizar Cadastro';
+      setTimeout(() => goToStep(1), 1400);
+
+    } catch (err) {
+      showStatus('statusStep4', 'Não foi possível ligar ao servidor (' + API_URL + '). Confirma que o backend Flask está a correr.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Finalizar Cadastro';
+    }
+  });
+
+  // ---- TABELA: carregada a partir da base de dados (via backend) ----
+  async function carregarFuncionarios() {
+    const tableWrapper = document.getElementById('tableWrapper');
+    try {
+      const resposta = await fetch(`${API_URL}/api/funcionarios`);
+      const dados = await resposta.json();
+
+      if (!dados.sucesso) {
+        tableWrapper.innerHTML = '<div class="empty-state">Não foi possível carregar os funcionários.</div>';
+        return;
+      }
+
+      document.getElementById('countBadge').textContent = dados.funcionarios.length;
+
+      if (dados.funcionarios.length === 0) {
+        tableWrapper.innerHTML = '<div class="empty-state">Ainda não há funcionários registados.</div>';
+        return;
+      }
+
+      let html = '<table><thead><tr>' +
+        '<th>Foto</th><th>Código</th><th>Nome</th><th>Departamento</th><th>Data</th>' +
+        '</tr></thead><tbody>';
+
+      dados.funcionarios.forEach(f => {
+        html += `<tr>
+          <td class="foto"><img src="${API_URL}${f.fotoFacialUrl}" alt="foto"></td>
+          <td>${f.codigo}</td>
+          <td>${f.nome}</td>
+          <td>${f.departamento}</td>
+          <td>${f.dataCadastro}</td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+      tableWrapper.innerHTML = html;
+    } catch (err) {
+      tableWrapper.innerHTML = '<div class="empty-state">Servidor indisponível. Inicia o backend Flask (python app.py).</div>';
+    }
+  }
+
+  // estado inicial
+  goToStep(1);
+  carregarFuncionarios();
+</script>
+</body>
+</html>
