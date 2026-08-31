@@ -5,13 +5,13 @@ import FuncionariosList from './components/funcionarios/FuncionariosList.jsx'
 import { verificarSaude } from './api.js'
 
 const TABS = [
-  { id: 'cadastro', rotulo: 'Cadastro' },
-  { id: 'reconhecimento', rotulo: 'Reconhecimento Facial' },
+  { id: 'cadastro', rotulo: 'Cadastro de Funcionário' },
+  { id: 'presenca', rotulo: 'Marcar Presença' },
   { id: 'funcionarios', rotulo: 'Funcionários' },
 ]
 
 export default function App() {
-  const [aba, setAba] = useState('cadastro')
+  const [aba, setAba] = useState('presenca')
   const [servidorOnline, setServidorOnline] = useState(null)
   const [recarregarChave, setRecarregarChave] = useState(0)
 
@@ -29,20 +29,22 @@ export default function App() {
   return (
     <div className="container">
       <header className="brand-header">
-        <svg width="52" height="52" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-          <path d="M15,15 L15,2 A13,13 0 0,0 2,15 Z" fill="#39BAA1" />
-          <path d="M17,15 L30,15 A13,13 0 0,0 17,2 Z" fill="#4D7BFF" />
-          <path d="M15,17 L2,17 A13,13 0 0,0 15,30 Z" fill="#4D7BFF" />
-          <path d="M17,17 L17,30 A13,13 0 0,0 30,17 Z" fill="#39BAA1" />
-        </svg>
-        <h1>Stemmoz</h1>
+        {/* Se tiveres o logótipo em public/logo-isdb.png, usa esta linha: */}
+        {/* <img src="/logo-isdb.png" alt="Instituto Superior Dom Bosco" height="52" /> */}
+        <div className="brand-logo">ISDB</div>
+
+        <h1>ISDB · Controlo de Presenças</h1>
+
         {servidorOnline !== null && (
           <span className={`server-status ${servidorOnline ? 'online' : 'offline'}`}>
             <span className="dot" /> {servidorOnline ? 'Servidor ligado' : 'Servidor indisponível'}
           </span>
         )}
       </header>
-      <div className="subtitle">Sistema de Cadastro e Reconhecimento Facial de Funcionários</div>
+
+      <div className="subtitle">
+        Sistema de Marcação de Presença dos Funcionários do ISDB por Reconhecimento Facial
+      </div>
 
       <nav className="tabs">
         {TABS.map((t) => (
@@ -57,7 +59,7 @@ export default function App() {
       </nav>
 
       {aba === 'cadastro' && <CadastroWizard aoConcluirCadastro={aoConcluirCadastro} />}
-      {aba === 'reconhecimento' && <Reconhecimento />}
+      {aba === 'presenca' && <Reconhecimento />}
       {aba === 'funcionarios' && <FuncionariosList recarregarChave={recarregarChave} />}
     </div>
   )

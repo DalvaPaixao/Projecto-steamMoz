@@ -17,29 +17,24 @@ async function pedido(caminho, opcoes = {}) {
   }
   return dados
 }
-
 export function verificarSaude() {
-  return pedido('/api/saude')
+  return pedido('/api/saude')  
 }
-
 export function listarFuncionarios() {
   return pedido('/api/funcionarios')
 }
-
 export function cadastrarFuncionario(payload) {
   return pedido('/api/funcionarios', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 }
-
 export function pesquisarPorFace(foto) {
   return pedido('/api/reconhecimento', {
     method: 'POST',
     body: JSON.stringify({ foto }),
   })
 }
-
 export function urlImagem(caminhoRelativo) {
   if (!caminhoRelativo) return ''
   return `${API_URL}${caminhoRelativo}`
