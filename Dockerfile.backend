@@ -1,0 +1,21 @@
+# Imagem baseada em Miniconda: o dlib (dependência do face_recognition) não
+# tem wheel pré-compilada para todas as plataformas e demora muito a
+# compilar a partir do código-fonte. O canal conda-forge distribui um
+# binário pronto a usar, tal como foi validado em desenvolvimento.
+FROM continuumio/miniconda3:24.9.2-0
+
+WORKDIR /app
+
+RUN conda install -y -c conda-forge --override-channels python=3.11 dlib numpy=1.26.4 \
+    && conda clean -afy
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+
+RUN mkdir -p uploads/bi uploads/facial
+
+EXPOSE 5000
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "120", "app:app"]

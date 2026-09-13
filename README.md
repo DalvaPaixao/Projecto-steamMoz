@@ -1,24 +1,26 @@
-# Sistema de Cadastro de Funcionários com Reconhecimento Facial — Stemmoz
+# Sistema de Cadastro e Reconhecimento Facial de Funcionários — Stemmoz
 
-Este projecto implementa a parte de **cadastro (registo)** de funcionários,
-com captura da foto facial frontal e extracção automática das
-características faciais (vector de 128 dimensões), de acordo com a
-arquitectura cliente-servidor descrita na monografia:
+Este projecto implementa o **cadastro (registo)** e a **pesquisa/reconhecimento**
+de funcionários por rosto, de acordo com a arquitectura cliente-servidor
+descrita na monografia:
 
-- **Cliente** → `cadastro.html` (corre no navegador, acede à câmara)
+- **Cliente** → `frontend/` (aplicação **React**, corre no navegador, acede à câmara)
 - **Servidor** → `app.py` (Python/Flask — processa o reconhecimento facial e fala com a base de dados)
-- **Base de dados** → MySQL, gerido pelo XAMPP/phpMyAdmin
+- **Base de dados** → MySQL (as tabelas são **criadas automaticamente** pelo próprio backend ao arrancar)
 
-Este projecto cobre **apenas o cadastro**. A verificação diária de presença
-(comparar um rosto novo com os já registados) é a fase seguinte, a construir
-depois de o cadastro estar validado.
+> O antigo formulário estático `cadastro.html` foi substituído pela aplicação
+> React em `frontend/`, que é mais interactiva (validação em tempo real,
+> pesquisa/filtros na tabela, indicador de estado do servidor) e já inclui o
+> ecrã de **Reconhecimento Facial** (pesquisa de um rosto captado ao vivo
+> contra os funcionários já cadastrados).
 
 ---
 
 ## 1. Pré-requisitos
 
-- **XAMPP** instalado, com o **Apache** e o **MySQL** ligados (no painel de controlo do XAMPP).
+- **Node.js 18+** e **npm**, para correr o frontend React.
 - **Python 3.10 ou 3.11** instalado (evita a versão 3.12+, por compatibilidade com o `dlib`).
+- Acesso a um **servidor MySQL** (local ou remoto) na porta **3306**.
 - **Visual Studio Code** (ou outro editor à tua escolha).
 
 > ⚠️ **Nota importante sobre o `dlib`:** a biblioteca `face_recognition` depende do `dlib`,
@@ -33,19 +35,25 @@ depois de o cadastro estar validado.
 
 ---
 
-## 2. Configurar a base de dados
+## 2. Base de dados (criação automática)
 
-1. Abre o **XAMPP Control Panel** e liga o **Apache** e o **MySQL**.
-2. Abre o navegador em `http://localhost/phpmyadmin`.
-3. Clica no separador **SQL**.
-4. Copia todo o conteúdo do ficheiro `schema.sql` (deste projecto) e cola na caixa.
-5. Clica em **Executar**.
+Já **não é preciso** correr manualmente o `schema.sql` no phpMyAdmin: ao
+arrancar, o `app.py` liga-se ao servidor MySQL configurado em `DB_CONFIG`
+(dentro do próprio ficheiro), cria a base de dados `stemmoz_rh` (caso não
+exista) e cria a tabela `funcionarios` (caso não exista).
 
-Isto cria a base de dados `stemmoz_rh` e a tabela `funcionarios`.
+```python
+DB_CONFIG = {
+    "host": "102.211.186.44",  # host do servidor MySQL
+    "port": 3306,               # porta por omissão do MySQL
+    "user": "root",
+    "password": "...",
+    "database": "stemmoz_rh",
+}
+```
 
-> Se o teu MySQL tiver uma password definida para o utilizador `root`
-> (por defeito no XAMPP não tem), abre o `app.py` e ajusta o valor
-> `"password": ""` em `DB_CONFIG`.
+Ajusta `host`, `port`, `user` e `password` conforme o teu servidor MySQL.
+O ficheiro `schema.sql` fica apenas como referência do esquema criado.
 
 ---
 
@@ -68,43 +76,75 @@ python app.py
 
 Se tudo correr bem, deverás ver:
 ```
-Servidor Stemmoz a correr em http://localhost:5000
+Base de dados 'stemmoz_rh' e tabela 'funcionarios' prontas em <host>:3306.
+Servidor Stemmoz a correr em http://localhost:5000 (MySQL em <host>:3306)
 ```
 
 Deixa este terminal aberto — o servidor tem de ficar a correr enquanto usas o sistema.
 
 ---
 
-## 4. Abrir o formulário de cadastro
+## 4. Instalar e correr o frontend (React)
 
-Com o servidor Flask a correr, abre o ficheiro `cadastro.html` directamente
-no navegador (duplo clique, ou clique direito → "Abrir com" → o teu navegador).
+Num segundo terminal:
 
-O formulário vai:
-1. Pedir o nome e o departamento do funcionário;
-2. Pedir a foto do documento de identificação (BI);
-3. Activar a câmara e captar **apenas uma foto facial frontal**;
-4. Mostrar um resumo para confirmação;
-5. Ao clicares em "Finalizar Cadastro", enviar os dados ao servidor Flask, que:
-   - detecta o rosto na foto e extrai as suas características (128 números);
-   - se não conseguir detectar nenhum rosto, devolve uma mensagem de erro
-     (pede para repetir a captura, com melhor iluminação);
-   - se tudo correr bem, guarda o registo na base de dados MySQL.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-A tabela "Funcionários Registados", no fundo da página, é carregada
-directamente a partir da base de dados.
+Abre o endereço apresentado (normalmente `http://localhost:5173`) no navegador.
+
+Por omissão, o frontend fala com o backend em `http://localhost:5000`. Se o
+backend estiver noutra máquina/porta, cria um ficheiro `frontend/.env`
+(a partir de `frontend/.env.example`) com:
+
+```
+VITE_API_URL=http://<host-do-backend>:5000
+```
+
+Para gerar uma versão de produção do frontend: `npm run build` (gera a pasta `frontend/dist`, que pode ser servida por qualquer servidor estático).
 
 ---
 
-## 5. Estrutura de ficheiros
+## 5. Usar a aplicação
+
+A aplicação React tem três separadores:
+
+1. **Cadastro** — assistente em 4 passos: dados do funcionário → foto do
+   documento (BI) → captura facial ao vivo → confirmação. Ao finalizar, o
+   backend detecta o rosto, extrai as suas características (128 números) e
+   grava o registo na base de dados.
+2. **Reconhecimento Facial** — activa a câmara, captura um rosto e pesquisa,
+   em tempo real, qual o funcionário já cadastrado (se algum) cujo rosto mais
+   se aproxima, devolvendo o nome, departamento, código e a distância da
+   comparação.
+3. **Funcionários** — lista de todos os funcionários registados, com
+   pesquisa por nome/código, filtro por departamento e ordenação por coluna.
+
+---
+
+## 6. Estrutura de ficheiros
 
 ```
 stemmoz-cadastro/
-├── app.py              → backend Flask (API + reconhecimento facial)
+├── app.py              → backend Flask (API + reconhecimento/pesquisa facial + criação automática da BD)
 ├── requirements.txt    → dependências Python
-├── schema.sql          → script de criação da base de dados MySQL
-├── cadastro.html       → formulário (cliente), a correr no navegador
-├── README.md           → este ficheiro
+├── schema.sql          → esquema de referência da base de dados MySQL (criado automaticamente pelo app.py)
+├── frontend/            → aplicação React (cliente)
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── cadastro/        → assistente de cadastro em 4 passos
+│   │   │   ├── reconhecimento/  → pesquisa de funcionário por rosto
+│   │   │   ├── funcionarios/    → lista com pesquisa/filtros/ordenação
+│   │   │   └── common/          → componentes partilhados (status, spinner)
+│   │   ├── hooks/useCamera.js   → acesso à câmara, partilhado entre ecrãs
+│   │   ├── api.js               → chamadas ao backend Flask
+│   │   └── App.jsx              → navegação por separadores
+│   └── package.json
+├── cadastro.html        → formulário original (mantido como referência histórica)
+├── README.md            → este ficheiro
 └── uploads/
     ├── bi/              → fotos dos documentos de identificação, guardadas aqui
     └── facial/          → fotos faciais frontais, guardadas aqui
@@ -112,13 +152,14 @@ stemmoz-cadastro/
 
 ---
 
-## 6. Sobre as características faciais
+## 7. Sobre as características faciais
 
 O sistema **não guarda a fotografia para depois comparar imagem contra
 imagem**. Ao receber a foto facial, o backend usa o algoritmo do Dlib
 (através da biblioteca `face_recognition`, já fundamentada no documento de
 ferramentas da monografia) para extrair um vector de **128 características
 numéricas**, exclusivo de cada rosto. É esse vector — guardado na coluna
-`caracteristicas_faciais` da tabela `funcionarios`, em formato JSON — que
-será usado, na fase seguinte do projecto, para comparar e reconhecer os
-funcionários no momento da marcação de presença.
+`caracteristicas_faciais` da tabela `funcionarios`, em formato JSON — que é
+usado no ecrã de **Reconhecimento Facial** para comparar (via
+`face_recognition.face_distance`) um rosto captado ao vivo com todos os
+rostos já cadastrados, e identificar a melhor correspondência.

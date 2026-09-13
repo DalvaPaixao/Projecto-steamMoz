@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+.env
+
+uploads/bi/*
+uploads/facial/*
+!uploads/bi/.gitkeep
+!uploads/facial/.gitkeep

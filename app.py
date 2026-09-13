@@ -16,6 +16,7 @@
 # ============================================================
 
 import os
+import io
 import json
 import base64
 import uuid
@@ -28,6 +29,10 @@ from flask_cors import CORS
 import mysql.connector
 from mysql.connector import Error as MySQLError
 
+# Distância máxima (face_distance) para considerar duas faces como
+# pertencentes à mesma pessoa. Quanto menor, mais rigorosa a comparação.
+LIMIAR_RECONHECIMENTO = 0.6
+
 # ---------------------------------------------------------------
 # Configuração
 # ---------------------------------------------------------------
@@ -39,21 +44,70 @@ FACIAL_DIR = os.path.join(UPLOADS_DIR, "facial")
 os.makedirs(BI_DIR, exist_ok=True)
 os.makedirs(FACIAL_DIR, exist_ok=True)
 
-# Credenciais por omissão do XAMPP: utilizador "root", sem password.
-# Ajusta aqui caso tenhas configurado uma password no teu MySQL.
+# Ligação ao servidor MySQL (porta por omissão 3306). Cada valor pode ser
+# substituído por uma variável de ambiente — é assim que o docker-compose
+# aponta o backend para o serviço "mysql" do próprio compose, sem precisar
+# de alterar este ficheiro.
 DB_CONFIG = {
-    "host": "localhost",
-    "user": "root",
-    "password": "",
-    "database": "stemmoz_rh",
+    "host": os.environ.get("DB_HOST", "102.211.186.44"),
+    "port": int(os.environ.get("DB_PORT", "3306")),
+    "user": os.environ.get("DB_USER", "root"),
+    "password": os.environ.get("DB_PASSWORD", "07123752136"),
+    "database": os.environ.get("DB_NAME", "stemmoz_rh"),
 }
 
 app = Flask(__name__)
-CORS(app)  # permite que o ficheiro cadastro.html (aberto localmente) fale com este servidor
+CORS(app)  # permite que o frontend React (noutra origem/porta) fale com este servidor
 
 
 def get_db_connection():
     return mysql.connector.connect(**DB_CONFIG)
+
+
+def inicializar_base_de_dados():
+    """Garante que a base de dados e a tabela 'funcionarios' existem no
+    servidor MySQL configurado (host/porta acima), criando-as
+    automaticamente caso ainda não existam — não é preciso correr o
+    schema.sql manualmente no phpMyAdmin."""
+    config_sem_bd = {k: v for k, v in DB_CONFIG.items() if k != "database"}
+
+    conexao = mysql.connector.connect(**config_sem_bd)
+    cursor = conexao.cursor()
+    cursor.execute(
+        f"CREATE DATABASE IF NOT EXISTS {DB_CONFIG['database']} "
+        "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    )
+    cursor.close()
+    conexao.close()
+
+    conexao = get_db_connection()
+    cursor = conexao.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS funcionarios (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          codigo VARCHAR(20) NOT NULL UNIQUE,
+          nome VARCHAR(150) NOT NULL,
+          departamento VARCHAR(100) NOT NULL,
+          foto_bi_path VARCHAR(255) NOT NULL,
+          foto_facial_path VARCHAR(255) NOT NULL,
+          caracteristicas_faciais TEXT NOT NULL,
+          data_cadastro DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conexao.commit()
+    cursor.close()
+    conexao.close()
+    print(f"Base de dados '{DB_CONFIG['database']}' e tabela 'funcionarios' prontas em {DB_CONFIG['host']}:{DB_CONFIG['port']}.")
+
+
+# Corre já ao importar o módulo (não só quando é executado directamente),
+# para que também funcione quando o servidor é arrancado com gunicorn.
+try:
+    inicializar_base_de_dados()
+except MySQLError as e:
+    print(f"[aviso] Não foi possível preparar a base de dados no arranque: {e}")
 
 
 def gerar_codigo_funcionario():
@@ -82,12 +136,11 @@ def guardar_imagem_base64(data_url, pasta, prefixo):
     return nome_ficheiro
 
 
-def extrair_caracteristicas_faciais(caminho_absoluto_imagem):
-    """Recebe o caminho de uma imagem facial frontal e devolve o
-    vector de 128 características extraído pelo modelo Dlib
-    (através da biblioteca face_recognition), ou None caso não
-    seja detectado nenhum rosto na imagem."""
-    imagem = face_recognition.load_image_file(caminho_absoluto_imagem)
+def extrair_caracteristicas_de_imagem(imagem):
+    """Recebe uma imagem já carregada (array numpy) e devolve o vector
+    de 128 características extraído pelo modelo Dlib (através da
+    biblioteca face_recognition), ou None caso não seja detectado
+    nenhum rosto na imagem."""
     localizacoes = face_recognition.face_locations(imagem)
 
     if len(localizacoes) == 0:
@@ -99,6 +152,24 @@ def extrair_caracteristicas_faciais(caminho_absoluto_imagem):
     encodings = face_recognition.face_encodings(imagem, known_face_locations=localizacoes)
     vector = encodings[0]  # numpy array com 128 posições
     return vector.tolist(), None
+
+
+def extrair_caracteristicas_faciais(caminho_absoluto_imagem):
+    """Variante que recebe o caminho de um ficheiro em disco."""
+    imagem = face_recognition.load_image_file(caminho_absoluto_imagem)
+    return extrair_caracteristicas_de_imagem(imagem)
+
+
+def carregar_imagem_de_data_url(data_url):
+    """Descodifica uma dataURL base64 directamente em memória (sem
+    gravar em disco), devolvendo uma imagem pronta para o
+    face_recognition."""
+    if "," in data_url:
+        _, dados_b64 = data_url.split(",", 1)
+    else:
+        dados_b64 = data_url
+    binario = base64.b64decode(dados_b64)
+    return face_recognition.load_image_file(io.BytesIO(binario))
 
 
 # ---------------------------------------------------------------
@@ -207,11 +278,86 @@ def listar_funcionarios():
     return jsonify({"sucesso": True, "funcionarios": funcionarios})
 
 
+@app.route("/api/reconhecimento", methods=["POST"])
+def pesquisar_funcionario_por_face():
+    """Recebe uma foto (dataURL) captada ao vivo, extrai as suas
+    características faciais e pesquisa, na base de dados, qual o
+    funcionário já cadastrado cujo rosto mais se aproxima."""
+    dados = request.get_json(silent=True) or {}
+    foto = dados.get("foto")
+
+    if not foto:
+        return jsonify({"sucesso": False, "erro": "Falta a foto facial para a pesquisa."}), 400
+
+    try:
+        imagem = carregar_imagem_de_data_url(foto)
+    except Exception:
+        return jsonify({"sucesso": False, "erro": "Não foi possível ler a imagem enviada."}), 400
+
+    vector, erro = extrair_caracteristicas_de_imagem(imagem)
+    if erro:
+        return jsonify({"sucesso": False, "erro": erro}), 422
+
+    vector_pesquisado = np.array(vector)
+
+    try:
+        conexao = get_db_connection()
+        cursor = conexao.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT id, codigo, nome, departamento, foto_facial_path,
+                   caracteristicas_faciais, data_cadastro
+            FROM funcionarios
+            """
+        )
+        linhas = cursor.fetchall()
+        cursor.close()
+        conexao.close()
+    except MySQLError as e:
+        return jsonify({"sucesso": False, "erro": f"Erro ao consultar a base de dados: {e}"}), 500
+
+    if not linhas:
+        return jsonify({
+            "sucesso": True,
+            "encontrado": False,
+            "mensagem": "Ainda não há funcionários registados para comparar.",
+        })
+
+    vectores_conhecidos = [np.array(json.loads(linha["caracteristicas_faciais"])) for linha in linhas]
+    distancias = face_recognition.face_distance(vectores_conhecidos, vector_pesquisado)
+    indice_melhor = int(np.argmin(distancias))
+    melhor_distancia = float(distancias[indice_melhor])
+    melhor_linha = linhas[indice_melhor]
+
+    if melhor_distancia > LIMIAR_RECONHECIMENTO:
+        return jsonify({
+            "sucesso": True,
+            "encontrado": False,
+            "distancia": round(melhor_distancia, 4),
+            "mensagem": "Nenhum funcionário corresponde a este rosto.",
+        })
+
+    return jsonify({
+        "sucesso": True,
+        "encontrado": True,
+        "distancia": round(melhor_distancia, 4),
+        "funcionario": {
+            "id": melhor_linha["id"],
+            "codigo": melhor_linha["codigo"],
+            "nome": melhor_linha["nome"],
+            "departamento": melhor_linha["departamento"],
+            "fotoFacialUrl": f"/uploads/{melhor_linha['foto_facial_path']}",
+            "dataCadastro": melhor_linha["data_cadastro"].strftime("%d/%m/%Y %H:%M"),
+        },
+    })
+
+
 @app.route("/uploads/<path:subcaminho>", methods=["GET"])
 def servir_imagem(subcaminho):
     return send_from_directory(UPLOADS_DIR, subcaminho)
 
 
 if __name__ == "__main__":
-    print("Servidor Stemmoz a correr em http://localhost:5000")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    debug_mode = os.environ.get("FLASK_DEBUG", "true").lower() == "true"
+    print(f"Servidor Stemmoz a correr em http://localhost:5000 (MySQL em {DB_CONFIG['host']}:{DB_CONFIG['port']})")
+    app.run(host="0.0.0.0", port=5000, debug=debug_mode, use_reloader=False)
