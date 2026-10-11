@@ -1,0 +1,57 @@
+/* ------------------------------------------------------------
+   Estilos novos usados pela marcação de presença, pelo histórico
+   e pelas fotos protegidas. Importado uma vez, no App.jsx.
+   Usa as mesmas cores (--isdb-*) do index.css.
+   ------------------------------------------------------------ */
+
+/* Mensagem informativa (ex: "a presença de hoje já está completa") */
+.status-info {
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+.badge-info {
+  background: #eff6ff;
+  color: #1e40af;
+  margin-top: 10px;
+  display: inline-block;
+}
+
+/* Quadrado cinzento mostrado enquanto uma foto protegida carrega */
+.img-placeholder {
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: #f1f2f4;
+  vertical-align: middle;
+}
+.match-card .img-placeholder {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Campos de data do histórico (iguais aos campos de texto) */
+input[type="date"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: var(--isdb-texto);
+}
+input[type="date"]:focus {
+  outline: none;
+  border-color: var(--isdb-laranja);
+  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.18);
+}
+.filters-row input[type="date"] {
+  flex: 1;
+}
+
+.cell-vazio {
+  color: #9ca3af;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listarFuncionarios, urlImagem } from '../../api.js'
+import { listarFuncionarios } from '../../api.js'
 import StatusMessage from '../common/StatusMessage.jsx'
+import ImagemProtegida from '../common/ImagemProtegida.jsx'
 
 export default function FuncionariosList({ recarregarChave }) {
   const [funcionarios, setFuncionarios] = useState([])
@@ -107,7 +108,7 @@ export default function FuncionariosList({ recarregarChave }) {
           <tbody>
             {listaFiltrada.map((f) => (
               <tr key={f.id}>
-                <td className="foto"><img src={urlImagem(f.fotoFacialUrl)} alt={f.nome} /></td>
+                <td className="foto"><ImagemProtegida caminho={f.fotoFacialUrl} alt={f.nome} /></td>
                 <td>{f.codigo}</td>
                 <td>{f.nome}</td>
                 <td>{f.departamento}</td>

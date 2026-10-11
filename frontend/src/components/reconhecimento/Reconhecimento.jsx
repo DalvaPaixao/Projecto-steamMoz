@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCamera } from '../../hooks/useCamera.js'
-import { pesquisarPorFace, urlImagem } from '../../api.js'
+import { marcarPresenca } from '../../api.js'
 import StatusMessage from '../common/StatusMessage.jsx'
 import Spinner from '../common/Spinner.jsx'
+import ImagemProtegida from '../common/ImagemProtegida.jsx'
 
 export default function Reconhecimento() {
   const { videoRef, activa, erro: erroCamera, iniciar, parar, capturar } = useCamera()
   const [foto, setFoto] = useState(null)
-  const [aPesquisar, setAPesquisar] = useState(false)
+  const [aMarcar, setAMarcar] = useState(false)
   const [resultado, setResultado] = useState(null)
   const [status, setStatus] = useState({ tipo: '', mensagem: '' })
 
@@ -28,47 +29,54 @@ export default function Reconhecimento() {
     setStatus({ tipo: '', mensagem: '' })
   }
 
-  async function pesquisar() {
+  // Depois de uma marcação, o ecrã volta sozinho ao início (para a pessoa seguinte)
+  useEffect(() => {
+    if (!resultado) return undefined
+    const temporizador = setTimeout(refazer, 8000)
+    return () => clearTimeout(temporizador)
+  }, [resultado])
+
+  async function marcar() {
     if (!foto) return
-    setAPesquisar(true)
+    setAMarcar(true)
     setStatus({ tipo: '', mensagem: '' })
     setResultado(null)
     try {
-      const resposta = await pesquisarPorFace(foto)
+      const resposta = await marcarPresenca(foto)
       setResultado(resposta)
-      if (!resposta.encontrado) {
-        setStatus({ tipo: 'error', mensagem: resposta.mensagem || 'Nenhum funcionário corresponde a este rosto.' })
-      }
+      setStatus({ tipo: resposta.registado ? 'success' : 'info', mensagem: resposta.mensagem })
     } catch (erro) {
       setStatus({ tipo: 'error', mensagem: erro.message })
     } finally {
-      setAPesquisar(false)
+      setAMarcar(false)
     }
   }
 
+  const rotuloTipo = resultado?.tipo === 'saida' ? 'Saída' : 'Entrada'
+
   return (
     <div className="card">
-      <h2>Reconhecimento Facial</h2>
+      <h2>Marcar Presença</h2>
       <div className="hint">
-        Captura um rosto pela câmara para pesquisar, em tempo real, se corresponde a algum
-        funcionário já cadastrado na base de dados.
+        Posiciona o rosto de frente para a câmara, captura e confirma. O sistema identifica o
+        funcionário e regista a entrada (primeira marcação do dia) ou a saída (segunda marcação).
       </div>
 
       <div className="camera-wrap">
         {!foto ? (
           <video ref={videoRef} autoPlay playsInline muted />
         ) : (
-          <img src={foto} alt="Rosto capturado para pesquisa" />
+          <img src={foto} alt="Rosto capturado para marcar a presença" />
         )}
       </div>
 
       <div className="camera-btn-row">
         {!activa && !foto && <button className="secondary" onClick={iniciar}>Activar Câmara</button>}
         {activa && !foto && <button onClick={capturarFoto}>Capturar</button>}
-        {foto && <button className="secondary" onClick={refazer}>Nova captura</button>}
-        {foto && (
-          <button onClick={pesquisar} disabled={aPesquisar}>
-            {aPesquisar ? <Spinner label="A pesquisar..." /> : 'Pesquisar'}
+        {foto && <button className="secondary" onClick={refazer} disabled={aMarcar}>Nova captura</button>}
+        {foto && !resultado && (
+          <button onClick={marcar} disabled={aMarcar}>
+            {aMarcar ? <Spinner label="A identificar..." /> : 'Marcar Presença'}
           </button>
         )}
       </div>
@@ -76,14 +84,17 @@ export default function Reconhecimento() {
       <StatusMessage tipo="error" mensagem={erroCamera} />
       <StatusMessage tipo={status.tipo} mensagem={status.mensagem} />
 
-      {resultado?.encontrado && (
+      {resultado?.funcionario && (
         <div className="match-card">
-          <img src={urlImagem(resultado.funcionario.fotoFacialUrl)} alt={resultado.funcionario.nome} />
+          <ImagemProtegida caminho={resultado.funcionario.fotoFacialUrl} alt={resultado.funcionario.nome} />
           <div className="match-info">
             <div className="match-name">{resultado.funcionario.nome}</div>
             <div className="match-detail">{resultado.funcionario.departamento} · {resultado.funcionario.codigo}</div>
-            <div className="match-detail">Cadastrado em {resultado.funcionario.dataCadastro}</div>
-            <span className="badge badge-success">Correspondência encontrada</span>
+            {resultado.registado ? (
+              <span className="badge badge-success">{rotuloTipo} registada às {resultado.hora}</span>
+            ) : (
+              <span className="badge badge-info">Nada novo a registar</span>
+            )}
           </div>
         </div>
       )}

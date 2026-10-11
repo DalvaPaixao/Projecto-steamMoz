@@ -32,3 +32,28 @@ CREATE TABLE IF NOT EXISTS funcionarios (
 
   data_cadastro DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Utilizadores que podem entrar no sistema (login). A senha fica guardada
+-- cifrada (hash), nunca em texto. O administrador é criado pelo backend, a
+-- partir de ADMIN_USER e ADMIN_PASSWORD no ficheiro .env.
+CREATE TABLE IF NOT EXISTS utilizadores (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome_utilizador VARCHAR(100) NOT NULL UNIQUE,
+  nome_exibicao VARCHAR(150) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Presenças: no máximo UMA entrada e UMA saída por funcionário por dia
+-- (a chave única uq_funcionario_dia_tipo garante-o).
+CREATE TABLE IF NOT EXISTS presencas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  funcionario_id INT NOT NULL,
+  tipo VARCHAR(10) NOT NULL,          -- 'entrada' ou 'saida'
+  data_hora DATETIME NOT NULL,
+  data_dia DATE NOT NULL,
+  distancia FLOAT NULL,               -- distância facial medida (para revisão)
+  UNIQUE KEY uq_funcionario_dia_tipo (funcionario_id, data_dia, tipo),
+  INDEX idx_data_dia (data_dia),
+  FOREIGN KEY (funcionario_id) REFERENCES funcionarios(id) ON DELETE CASCADE
+);

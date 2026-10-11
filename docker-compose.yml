@@ -28,6 +28,9 @@ services:
       DB_USER: root
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       DB_NAME: ${DB_NAME:-stemmoz_rh}
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY:-}
       FLASK_DEBUG: "false"
     ports:
       - "5000:5000"

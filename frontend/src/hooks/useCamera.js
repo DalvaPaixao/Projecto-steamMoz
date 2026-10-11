@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function useCamera() {
-  const videoRef = useRef(null)
+  const elementoVideo = useRef(null)
   const streamRef = useRef(null)
   const [activa, setActiva] = useState(false)
   const [erro, setErro] = useState('')
+
+  // "ref" para o <video> (usa-se como  ref={videoRef}): sempre que o elemento
+  // é (re)criado — por exemplo depois de "Nova captura" — liga-lhe a câmara
+  // que já está activa. Sem isto, o vídeo ficava preto na segunda captura.
+  const videoRef = useCallback((elemento) => {
+    elementoVideo.current = elemento
+    if (elemento && streamRef.current) {
+      elemento.srcObject = streamRef.current
+    }
+  }, [])
 
   const iniciar = useCallback(async () => {
     if (streamRef.current) return
@@ -12,8 +22,8 @@ export function useCamera() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true })
       streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
+      if (elementoVideo.current) {
+        elementoVideo.current.srcObject = stream
       }
       setActiva(true)
     } catch (err) {
@@ -27,11 +37,14 @@ export function useCamera() {
       streamRef.current.getTracks().forEach((faixa) => faixa.stop())
       streamRef.current = null
     }
+    if (elementoVideo.current) {
+      elementoVideo.current.srcObject = null
+    }
     setActiva(false)
   }, [])
 
   const capturar = useCallback(() => {
-    const video = videoRef.current
+    const video = elementoVideo.current
     if (!video || !video.videoWidth) return null
     const canvas = document.createElement('canvas')
     canvas.width = video.videoWidth
