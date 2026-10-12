@@ -32,7 +32,7 @@ export default function StepConfirmacao({ dados, aoVoltar, aoConcluir }) {
       <div className="hint">Revê os dados antes de finalizar o registo.</div>
 
       <div className="review-row"><span>Nome</span><span>{dados.nome}</span></div>
-      <div className="review-row"><span>Departamento</span><span>{dados.departamento}</span></div>
+      <div className="review-row"><span>Área de afetação</span><span>{dados.departamento}</span></div>
       <div className="preview" style={{ marginTop: 16 }}>
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <img src={dados.fotoBI} alt="BI" style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />

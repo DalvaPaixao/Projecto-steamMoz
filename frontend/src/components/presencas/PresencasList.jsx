@@ -79,7 +79,7 @@ export default function PresencasList() {
               <th>Data</th>
               <th>Código</th>
               <th>Nome</th>
-              <th>Departamento</th>
+              <th>Área de afetação</th>
               <th>Entrada</th>
               <th>Saída</th>
               <th>Horas</th>

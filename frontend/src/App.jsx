@@ -9,7 +9,7 @@ import { verificarSaude, obterToken, obterUtilizador, validarSessao, terminarSes
 
 const TABS = [
   { id: 'cadastro', rotulo: 'Cadastro de Funcionário' },
-  { id: 'presenca', rotulo: 'Marcar Presença' },
+  { id: 'presenca', rotulo: 'Verificar Rosto' },
   { id: 'historico', rotulo: 'Presenças' },
   { id: 'funcionarios', rotulo: 'Funcionários' },
 ]
@@ -85,7 +85,7 @@ export default function App() {
       </header>
 
       <div className="subtitle">
-        Sistema de Marcação de Presença dos Funcionários do ISDB por Reconhecimento Facial
+        Sistema de Cadastro e Verificação Facial dos Funcionários do ISDB
       </div>
 
       <nav className="tabs">
