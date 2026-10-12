@@ -77,7 +77,7 @@ export default function FuncionariosList({ recarregarChave }) {
           onChange={(e) => setPesquisa(e.target.value)}
         />
         <select value={departamento} onChange={(e) => setDepartamento(e.target.value)}>
-          <option value="">Todos os departamentos</option>
+          <option value="">Todas as áreas de afetação</option>
           {departamentos.map((d) => (
             <option key={d} value={d}>{d}</option>
           ))}
@@ -101,7 +101,7 @@ export default function FuncionariosList({ recarregarChave }) {
               <th>Foto</th>
               <th className="ordenavel" onClick={() => alternarOrdenacao('codigo')}>Código{setaOrdenacao('codigo')}</th>
               <th className="ordenavel" onClick={() => alternarOrdenacao('nome')}>Nome{setaOrdenacao('nome')}</th>
-              <th className="ordenavel" onClick={() => alternarOrdenacao('departamento')}>Departamento{setaOrdenacao('departamento')}</th>
+              <th className="ordenavel" onClick={() => alternarOrdenacao('departamento')}>Área de afetação{setaOrdenacao('departamento')}</th>
               <th className="ordenavel" onClick={() => alternarOrdenacao('dataCadastro')}>Data{setaOrdenacao('dataCadastro')}</th>
             </tr>
           </thead>
