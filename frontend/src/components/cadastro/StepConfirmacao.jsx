@@ -25,7 +25,6 @@ export default function StepConfirmacao({ dados, aoVoltar, aoConcluir }) {
       setAEnviar(false)
     }
   }
-
   return (
     <div className="card">
       <h2>Confirmar Cadastro</h2>

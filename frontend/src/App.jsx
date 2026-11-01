@@ -65,11 +65,9 @@ export default function App() {
   }
 
   return (
-    <div className="container">
+      <div className="container">
       <header className="brand-header">
-        {/* Se tiveres o logótipo em public/logo-isdb.png, usa esta linha: */}
-        {/* <img src="/logo-isdb.png" alt="Instituto Superior Dom Bosco" height="52" /> */}
-        <div className="brand-logo">ISDB</div>
+        <img src="/logo.png" alt="Instituto Superior Dom Bosco" height="64" />
 
         <h1>ISDB · Controlo de Presenças</h1>
 

@@ -5,7 +5,7 @@ import Spinner from '../common/Spinner.jsx'
 import { iniciarSessao } from '../../api.js'
 
 // O emblema deve estar em  frontend/public/logo-isdb.png
-const LOGO = '/logo-isdb.png'
+const LOGO = '/logo.png'
 
 function IconeOlho({ aberto }) {
   return (
