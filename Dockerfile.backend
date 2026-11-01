@@ -1,13 +1,19 @@
-# Imagem baseada em Miniconda: o dlib (dependência do face_recognition) não
-# tem wheel pré-compilada para todas as plataformas e demora muito a
-# compilar a partir do código-fonte. O canal conda-forge distribui um
-# binário pronto a usar, tal como foi validado em desenvolvimento.
-FROM continuumio/miniconda3:24.9.2-0
+FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN conda install -y -c conda-forge --override-channels python=3.11 dlib numpy=1.26.4 \
-    && conda clean -afy
+# Compilar o dlib a partir do código-fonte, sem AVX, para funcionar em
+# CPUs que só têm SSE4.2 (como o deste servidor).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential cmake libopenblas-dev liblapack-dev \
+        libjpeg-dev libpng-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# O dlib escolhe as instruções do CPU ao compilar, por isso a imagem tem de ser
+# construída numa máquina sem AVX. O import falha o build se o binário não
+# correr neste CPU, em vez de só crashar depois, já em produção.
+RUN CMAKE_POLICY_VERSION_MINIMUM=3.5 pip install --no-cache-dir dlib==19.24.9 \
+    && python -c "import dlib; print('dlib', dlib.__version__, 'AVX', dlib.USE_AVX_INSTRUCTIONS)"
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
