@@ -1,21 +1,4 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: stemmoz_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-stemmoz_rh}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
   backend:
     build:
       context: .
@@ -23,22 +6,23 @@ services:
     container_name: stemmoz_backend
     restart: unless-stopped
     environment:
-      DB_HOST: mysql
+      # Usa o container MySQL já existente (stemmoz_rh_mysql), ligado à
+      # rede "stemmoz_net" abaixo em vez de subir um novo serviço mysql.
+      DB_HOST: stemmoz_rh_mysql
       DB_PORT: 3306
       DB_USER: root
       DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       DB_NAME: ${DB_NAME:-stemmoz_rh}
+      FLASK_DEBUG: "false"
       ADMIN_USER: ${ADMIN_USER}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       SECRET_KEY: ${SECRET_KEY:-}
-      FLASK_DEBUG: "false"
     ports:
-      - "5000:5000"
+      - "5010:5000"
     volumes:
       - uploads_data:/app/uploads
-    depends_on:
-      mysql:
-        condition: service_healthy
+    networks:
+      - stemmoz_net
 
   frontend:
     build:
@@ -49,10 +33,13 @@ services:
     container_name: stemmoz_frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8030:80"
     depends_on:
       - backend
 
+networks:
+  stemmoz_net:
+    name: stemmoz_net
+
 volumes:
-  mysql_data:
   uploads_data:
