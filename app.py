@@ -18,7 +18,9 @@
 #   - Registar a PRESENÇA (entrada e saída) de cada funcionário,
 #     identificado pelo rosto, e disponibilizar o histórico;
 #   - Exigir LOGIN: só utilizadores autenticados podem usar a API
-#     (cadastrar, listar, marcar presença, histórico e ver fotos).
+#     (cadastrar, listar, histórico e ver fotos). A única excepção é
+#     a marcação de presença, que também aceita a câmara da sala (sem
+#     login) desde que envie a chave secreta CHAVE_QUIOSQUE.
 #
 # Que dados ficam guardados (política actual do sistema):
 #   - Na base de dados: nome, departamento, código, o vector facial
@@ -36,6 +38,7 @@ import json
 import math
 import time
 import base64
+import hmac
 import secrets
 import threading
 import unicodedata
@@ -232,6 +235,31 @@ def requer_login():
             cabecalho = request.headers.get("Authorization", "")
             token = cabecalho[7:].strip() if cabecalho.startswith("Bearer ") else None
 
+            sessao = validar_token(token)
+            if sessao is None:
+                return jsonify({"sucesso": False, "erro": "Sessão inválida ou expirada. Faz login novamente."}), 401
+            g.sessao = sessao
+            return funcao(*args, **kwargs)
+        return envolvido
+    return decorador
+
+
+def requer_login_ou_quiosque():
+    """Como o requer_login, mas também deixa passar a câmara da sala, que não tem
+    login: ela envia a chave secreta no cabeçalho 'X-Quiosque-Chave'. A chave vem
+    da variável de ambiente CHAVE_QUIOSQUE; se estiver vazia, o quiosque fica
+    desligado e só o login normal funciona."""
+    def decorador(funcao):
+        @wraps(funcao)
+        def envolvido(*args, **kwargs):
+            chave_esperada = os.environ.get("CHAVE_QUIOSQUE", "").strip()
+            chave_recebida = request.headers.get("X-Quiosque-Chave", "").strip()
+            if chave_esperada and chave_recebida and hmac.compare_digest(chave_recebida, chave_esperada):
+                g.sessao = {"id": None, "nome": "Quiosque", "quiosque": True}
+                return funcao(*args, **kwargs)
+
+            cabecalho = request.headers.get("Authorization", "")
+            token = cabecalho[7:].strip() if cabecalho.startswith("Bearer ") else None
             sessao = validar_token(token)
             if sessao is None:
                 return jsonify({"sucesso": False, "erro": "Sessão inválida ou expirada. Faz login novamente."}), 401
@@ -872,7 +900,7 @@ def pesquisar_funcionario_por_face():
 
 
 @app.route("/api/presencas/marcar", methods=["POST"])
-@requer_login()
+@requer_login_ou_quiosque()
 def marcar_presenca():
     """Recebe uma foto (dataURL) captada ao vivo, identifica o funcionário pelo
     rosto e regista a presença:
@@ -880,7 +908,8 @@ def marcar_presenca():
       - 2.ª marcação do dia  -> SAÍDA (depois de MIN_MINUTOS_ENTRE_MARCACOES)
       - a partir daí         -> avisa que a presença de hoje já está completa.
     O frontend envia só a foto: quem é o funcionário é sempre decidido aqui,
-    pelo rosto, para ninguém poder marcar presença em nome de outra pessoa."""
+    pelo rosto, para ninguém poder marcar presença em nome de outra pessoa.
+    Aceita login normal OU a chave da câmara da sala (CHAVE_QUIOSQUE)."""
     dados = request.get_json(silent=True) or {}
     foto = dados.get("foto")
 

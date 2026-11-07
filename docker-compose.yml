@@ -19,7 +19,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:-}
       # Força um modo de cálculo compatível com o CPU do servidor (sem AVX).
       # Sem isto o reconhecimento facial falha com "Illegal instruction".
-      OPENBLAS_CORETYPE: NEHALEM
+      OPENBLAS_CORETYPE: NEHALEM 
+      CHAVE_QUIOSQUE: ${CHAVE_QUIOSQUE:-}
     ports:
       - "5010:5000"
     volumes:

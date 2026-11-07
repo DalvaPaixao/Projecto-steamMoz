@@ -4,6 +4,7 @@ import Reconhecimento from './components/reconhecimento/Reconhecimento.jsx'
 import FuncionariosList from './components/funcionarios/FuncionariosList.jsx'
 import PresencasList from './components/presencas/PresencasList.jsx'
 import Login from './components/login/Login.jsx'
+import Quiosque from './components/quiosque/Quiosque.jsx'
 import './components/presencas/Presencas.css'
 import { verificarSaude, obterToken, obterUtilizador, validarSessao, terminarSessao } from './api.js'
 
@@ -56,6 +57,10 @@ export default function App() {
   function aoConcluirCadastro() {
     setRecarregarChave((k) => k + 1)
     setAba('funcionarios')
+  }
+    // Link da câmara da sala (sem login): /#marcar?chave=XXXX
+  if (window.location.hash.startsWith('#marcar')) {
+    return <Quiosque />
   }
 
   if (aVerificarSessao) return null
